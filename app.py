@@ -6,7 +6,9 @@ st.set_page_config(page_title="Analista Pro - Apuestas & Combinadas", page_icon=
 st.title("⚡ Analista Cuantitativo de Alto Valor & Combinadas")
 
 FOOTBALL_API_KEY = "25dde62359034a75ba0c67c36ef47f62"
-GROQ_API_KEY = st.secrets.get("GROQ_API_KEY", "")
+
+# Lectura directa del Secret configurado en Streamlit Cloud
+GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
 
 client = Groq(api_key=GROQ_API_KEY)
 
