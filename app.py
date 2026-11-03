@@ -1,4 +1,3 @@
-
 import streamlit as st
 import requests
 from groq import Groq
@@ -65,7 +64,7 @@ if user_input:
         """
 
         completion = client.chat.completions.create(
-           model="llama-3.3-70b-versatile",
+            model="llama-3.3-70b-versatile",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "system", "content": f"Datos en tiempo real: {datos_partidos}"},
