@@ -8,10 +8,15 @@ st.title("⚡ Analista Cuantitativo de Alto Valor & Combinadas")
 
 FOOTBALL_API_KEY = "25dde62359034a75ba0c67c36ef47f62"
 
-# Obtiene la clave cargada desde el panel de Secrets de Streamlit o del entorno
-GROQ_API_KEY = st.secrets.get("GROQ_API_KEY") if "GROQ_API_KEY" in st.secrets else os.environ.get("GROQ_API_KEY", "")
+# Intentar recuperar la API Key de Secrets o Entorno
+groq_key = st.secrets.get("GROQ_API_KEY") if "GROQ_API_KEY" in st.secrets else os.environ.get("GROQ_API_KEY", "")
 
-client = Groq(api_key=GROQ_API_KEY)
+# Si la clave no existe o está vacía, detener con mensaje claro en la app
+if not groq_key:
+    st.error("⚠️ La clave GROQ_API_KEY no se ha configurado en los Secrets de Streamlit.")
+    st.stop()
+
+client = Groq(api_key=groq_key.strip())
 
 if "mensajes" not in st.session_state:
     st.session_state.mensajes = []
@@ -66,16 +71,18 @@ if user_input:
            - Recomendación estricta de Stake (1/10 a 10/10).
         """
 
-        completion = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "system", "content": f"Datos en tiempo real: {datos_partidos}"},
-                {"role": "user", "content": user_input}
-            ],
-            temperature=0.4
-        )
-
-        respuesta = completion.choices[0].message.content
-        st.write(respuesta)
-        st.session_state.mensajes.append({"role": "assistant", "content": respuesta})
+        try:
+            completion = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "system", "content": f"Datos en tiempo real: {datos_partidos}"},
+                    {"role": "user", "content": user_input}
+                ],
+                temperature=0.4
+            )
+            respuesta = completion.choices[0].message.content
+            st.write(respuesta)
+            st.session_state.mensajes.append({"role": "assistant", "content": respuesta})
+        except Exception as e:
+            st.error(f"Error al conectar con la API de Groq: {e}")
