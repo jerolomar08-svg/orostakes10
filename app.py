@@ -8,10 +8,8 @@ st.title("⚡ Analista Cuantitativo de Alto Valor & Combinadas")
 
 FOOTBALL_API_KEY = "25dde62359034a75ba0c67c36ef47f62"
 
-# Intentar recuperar la API Key de Secrets o Entorno
 groq_key = st.secrets.get("GROQ_API_KEY") if "GROQ_API_KEY" in st.secrets else os.environ.get("GROQ_API_KEY", "")
 
-# Si la clave no existe o está vacía, detener con mensaje claro en la app
 if not groq_key:
     st.error("⚠️ La clave GROQ_API_KEY no se ha configurado en los Secrets de Streamlit.")
     st.stop()
@@ -73,7 +71,7 @@ if user_input:
 
         try:
             completion = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
+                model="llama-3.1-8b-instant",
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "system", "content": f"Datos en tiempo real: {datos_partidos}"},
