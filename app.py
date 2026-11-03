@@ -71,7 +71,7 @@ if user_input:
 
         try:
             completion = client.chat.completions.create(
-                model="openai/gpt-oss-20b",
+                model="llama3-8b-8192",
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "system", "content": f"Datos en tiempo real: {datos_partidos}"},
