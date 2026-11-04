@@ -59,6 +59,7 @@ if user_input or uploaded_file:
            - ENFRENTAMIENTOS INDIVIDUALES (H2H JUGADOR VS JUGADOR): Lateral vs. Extremo regateador (ej. Lamine Yamal, Vinícius, Mbappé) -> probabilidades de faltas, tarjetas provocadas y fueras de juego.
            - PARADAS DE PORTERO & GOLES: Disparos concedidos por el rival, paradas esperadas del portero (xG/xS) y lectura de partido abierto (Over/Under de goles tipo +2.5, +3.5 o BTTS).
            - TARJETAS Y CÓRNERS: Perfil del árbitro asignado (promedio tarjetas/partido) + tendencia de ataque por banda para córners asiáticos.
+           - CONTEXTO DE COMPETICIÓN: Sabe diferenciar cómo juegan los equipos en Champions vs. Ligas nacionales vs. Europa League/Conference, ajustando según rotaciones, localía y motivación.
         2. BALONCESTO (NBA / EUROLIGA):
            - Pace (ritmo de posesiones), matchups individuales defensivos por posición, player props (Puntos + Rebotes + Asistencias, Triples anotados) y desgaste/back-to-back.
         3. TENIS (ATP / WTA / CHALLENGER):
@@ -76,6 +77,7 @@ if user_input or uploaded_file:
             {"role": "system", "content": f"Datos de partidos actualizados: {datos_partidos}"}
         ]
 
+        # Seleccionar modelo según si hay imagen o solo texto
         if uploaded_file:
             base64_image = encode_image(uploaded_file)
             messages.append({
@@ -85,12 +87,14 @@ if user_input or uploaded_file:
                     {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
                 ]
             })
+            model_to_use = "llama-3.2-90b-vision-preview"
         else:
             messages.append({"role": "user", "content": prompt_texto})
+            model_to_use = "llama-3.3-70b-versatile"
 
         try:
             completion = client.chat.completions.create(
-                model="llama-3.2-11b-vision-preview",
+                model=model_to_use,
                 messages=messages,
                 temperature=0.6
             )
