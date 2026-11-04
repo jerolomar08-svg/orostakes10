@@ -1,10 +1,11 @@
 import os
+import base64
 import streamlit as st
 import requests
 from groq import Groq
 
 st.set_page_config(page_title="Analista Pro - Apuestas & Combinadas", page_icon="⚡", layout="wide")
-st.title("⚡ Analista Cuantitativo de Alto Valor & Combinadas")
+st.title("⚡ Analista Cuantitativo de Alto Valor & Combinadas (Bet365)")
 
 FOOTBALL_API_KEY = "25dde62359034a75ba0c67c36ef47f62"
 
@@ -16,6 +17,9 @@ if not groq_key:
 
 client = Groq(api_key=groq_key.strip())
 
+def encode_image(image_file):
+    return base64.b64encode(image_file.getvalue()).decode('utf-8')
+
 if "mensajes" not in st.session_state:
     st.session_state.mensajes = []
 
@@ -23,12 +27,18 @@ for msg in st.session_state.mensajes:
     with st.chat_message(msg["role"]):
         st.write(msg["content"])
 
-user_input = st.chat_input("Pídeme una combinada de cuota alta, análisis de tenis, baloncesto, fútbol o partidos del día...")
+uploaded_file = st.file_uploader("📷 Adjunta una captura/ejemplo (boletos, partidos, estadísticas...)", type=["png", "jpg", "jpeg"])
 
-if user_input:
-    st.session_state.mensajes.append({"role": "user", "content": user_input})
+user_input = st.chat_input("Dime algo tipo: ¿A qué le metemos hoy, loco?")
+
+if user_input or uploaded_file:
+    prompt_texto = user_input if user_input else "Mira la foto que te he subido y dime a qué le metemos o analízamela."
+    
+    st.session_state.mensajes.append({"role": "user", "content": prompt_texto})
     with st.chat_message("user"):
-        st.write(user_input)
+        if uploaded_file:
+            st.image(uploaded_file, caption="Imagen adjunta", width=300)
+        st.write(prompt_texto)
 
     with st.chat_message("assistant"):
         url = 'https://api.football-data.org/v4/competitions/CL/matches'
@@ -36,51 +46,56 @@ if user_input:
         
         try:
             res = requests.get(url, headers=headers, timeout=5)
-            datos_partidos = str(res.json().get('matches', []))[:1500] if res.status_code == 200 else "Sin datos directos de API en este instante"
+            datos_partidos = str(res.json().get('matches', []))[:1500] if res.status_code == 200 else "Sin datos directos de API"
         except Exception:
-            datos_partidos = "Sin datos directos de API en este instante"
+            datos_partidos = "Sin datos directos de API"
 
         system_prompt = """
-        Eres un Analista Deportivo Cuantitativo de elite y Tipster Experto especializado en DETECCIÓN DE VALOR, CUOTAS ALTAS (20.00 - 30.00+) Y APUESTAS COMBINADAS en Bet365 y casas globales.
+        Eres el colega del usuario, un analista deportivo cuantitativo de élite absoluto y tipster experto especializado en Bet365 (Crear Apuesta / Bet Builder). Hablas de forma totalmente natural, cercana e informal (usando expresiones típicas de un amigo como "loco", "hermano", "escúchame", "paga muy bien para lo fácil que entra", "esta cuota está inflada", etc.).
 
-        Tu objetivo es realizar un análisis TÁCTICO, ESTADÍSTICO Y PSICOLÓGICO EXHAUSTIVO en Fútbol, Baloncesto y Tenis para REDUCIR EL RIESGO AL MÍNIMO.
+        ANÁLISIS INTERNO EXHAUSTIVO OBLIGATORIO (LO PROCESAS TODO EN TU CABEZA JUGADOR POR JUGADOR Y ENCUENTRO POR ENCUENTRO ANTES DE RESPONDER):
+        1. FÚTBOL (MÓDULO TOTAL MICRO-METRIC):
+           - REMATES Y TIROS A PUERTA POR JUGADOR: Analizas la media de tiros de cada atacante/extremo/mediapunta, quién prueba desde fuera del área y la línea de tiros a puerta individuales de Bet365.
+           - ENFRENTAMIENTOS INDIVIDUALES (H2H JUGADOR VS JUGADOR): Lateral vs. Extremo regateador (ej. Lamine Yamal, Vinícius, Mbappé) -> probabilidades de faltas, tarjetas provocadas y fueras de juego.
+           - PARADAS DE PORTERO & GOLES: Disparos concedidos por el rival, paradas esperadas del portero (xG/xS) y lectura de partido abierto (Over/Under de goles tipo +2.5, +3.5 o BTTS).
+           - TARJETAS Y CÓRNERS: Perfil del árbitro asignado (promedio tarjetas/partido) + tendencia de ataque por banda para córners asiáticos.
+        2. BALONCESTO (NBA / EUROLIGA):
+           - Pace (ritmo de posesiones), matchups individuales defensivos por posición, player props (Puntos + Rebotes + Asistencias, Triples anotados) y desgaste/back-to-back.
+        3. TENIS (ATP / WTA / CHALLENGER):
+           - Adaptación a la superficie (tierra/dura/hierba), % de primer servicio, puntos ganados con 2º saque, desgaste físico en minutos acumulados y H2H histórico.
 
-        1. FÚTBOL (Ligas Nacionales, Champions League, Europa League, Conference):
-           - TÁCTICA Y MÍSTER: Planteamiento táctico del entrenador, cómo ajusta en liga vs. competiciones europeas, rotaciones previas/posteriores y planteamiento local/visitante.
-           - MERCADOS MICRO OBLIGATORIOS: Tarjetas (árbitro asignado + promedio de faltas), Córners (ataques por banda + tendencia defensiva), Remates y Remates a puerta por jugador, Goles (BTTS, Over/Under, en cualquier momento), Paradas de portero y Fueras de juego.
-
-        2. BALONCESTO (NBA, Euroliga, Liga Endesa):
-           - RITMO Y EFICIENCIA: Pace (posesiones esperadas), ratings ofensivos/defensivos y fatiga/rotaciones (Back-to-back, viajes).
-           - PLAYER PROPS & MATCHUPS: Puntos, Rebotes, Asistencias, Triples anotados/intentados, Robos, Tapones, Pérdidas y cómo defiende el rival esa posición específica.
-
-        3. TENIS (ATP, WTA, Challenger):
-           - SUPERFICIE Y MÉTRICAS: Especialización en arcilla, dura o hierba. % de primer servicio, puntos ganados con 1º y 2º saque, ases, dobles faltas y break points convertidos/salvados.
-           - HISTORIAL Y PSICOLOGÍA: Desgaste físico (minutos en pista a 3 o 5 sets), balance H2H y rendimiento en tie-breaks.
-
-        INTERACCIÓN Y DEBATE:
-        - Si el usuario te rebate una selección o propone un cambio (ej. quitar un gol y poner paradas de portero), evalúa la diferencia exacta en cuota, probabilidad real y reducción de riesgo, recalculando la combinada al instante.
-
-        ESTRUCTURA OBLIGATORIA DE RESPUESTA:
-        1. Desglose Técnico y Táctico del Choque (Métricas clave, árbitro, superficie/pace, bajas).
-        2. Análisis Selección por Selección (Mercado exacto tipo Bet365, cuota estimada y % de confianza).
-        3. CONCLUSIÓN FINAL Y COMBINADA DEFINITIVA:
-           - La Combinada Principal (Cuota Total Objetivo ej. 20.00 - 30.00+).
-           - Opción de Reducción de Riesgo / Alternativa Cubierta.
-           - Recomendación estricta de Stake (1/10 a 10/10).
+        ESTRUCTURA DE TU RESPUESTA:
+        - Saludo de colega directo al grano proponiendo la jugada.
+        - Explicación fluida y contundente de la LÓGICA DE DATOS MICRO (mencionando los tiros a puerta de los jugadores clave, el duelo lateral vs extremo, las paradas esperadas del portero o la tormenta de goles/córners sin soltar teórica aburrida). NO USES TABLAS EN MARKDOWN.
+        - Boleto listo para Bet365 con mercados exactos de Crear Apuesta (jugador, remates a puerta, tarjetas, goles, etc.) y sus cuotas individuales.
+        - Cuota Total Estimada y Stake Recomendado.
         """
+
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "system", "content": f"Datos de partidos actualizados: {datos_partidos}"}
+        ]
+
+        if uploaded_file:
+            base64_image = encode_image(uploaded_file)
+            messages.append({
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt_texto},
+                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
+                ]
+            })
+        else:
+            messages.append({"role": "user", "content": prompt_texto})
 
         try:
             completion = client.chat.completions.create(
-                model="openai/gpt-oss-20b",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "system", "content": f"Datos en tiempo real: {datos_partidos}"},
-                    {"role": "user", "content": user_input}
-                ],
-                temperature=0.4
+                model="llama-3.2-11b-vision-preview",
+                messages=messages,
+                temperature=0.6
             )
             respuesta = completion.choices[0].message.content
             st.write(respuesta)
             st.session_state.mensajes.append({"role": "assistant", "content": respuesta})
         except Exception as e:
-            st.error(f"Error al conectar con la API de Groq: {e}")
+            st.error(f"Error en la consulta: {e}")
